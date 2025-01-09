@@ -1,0 +1,44 @@
+version: '3'
+services:
+  db:
+    build: 
+      context: ./db
+      dockerfile: Dockerfile
+    ports:
+      - 3306:3306
+    volumes:
+      - ./db/store:/var/lib/mysql
+    networks:
+      - network
+
+  backend:
+    build: 
+      context: ./product
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on: # 서버 입장에서 DB 생성 없이 빌드되면, 서버가 터진다 따라서 의존을 설정해야함
+      - db # services에 선언한 db build가 되어야 실행됨
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/jwheodb?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_DRIVER: com.mysql.cj.jdbc.Driver
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234
+    networks: # db와 동일 네트워크로 잡아줘야 함 하단 참조
+      - network
+
+  frontend:
+    build: 
+      context: ./my-app
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 80:80
+    depends_on:
+      - backend
+    networks:
+      - network
+
+networks:
+  network:
